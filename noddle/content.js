@@ -1,4 +1,3 @@
-// 1. Update your aliases to use arrays
 const subjectAliases = {
     'chemistry': ['CH'],
     'math': ['MA', 'MI'],
@@ -37,18 +36,21 @@ const subjectAliases = {
 let extensionSettings = {};
 let isProcessing = false;
 
-// fetch settings
-chrome.storage.sync.get(['walkMeActive', 'autoOpenActive', 'aliasActive', 'redirectActive', 'hideNoDueActive'], (settings) => {
+chrome.storage.sync.get([
+    'walkMeActive', 
+    'autoOpenActive', 
+    'aliasActive', 
+    'redirectActive', 
+    'hideNoDueActive', 
+    'compactActive', 
+    'prioritizeClassesActive'
+], (settings) => {
     extensionSettings = settings;
-    
-    // start observer after page load
     const observer = new MutationObserver(cleanPage);
     observer.observe(document.documentElement, { childList: true, subtree: true });
-    
     cleanPage();
 });
 
-// listen for changes when user opens popup.js
 chrome.storage.onChanged.addListener((changes, namespace) => {
     if (namespace === 'sync') {
         for (let [key, { newValue }] of Object.entries(changes)) {
@@ -60,28 +62,19 @@ chrome.storage.onChanged.addListener((changes, namespace) => {
 function applyVisualFilter(query) {
     const courses = document.querySelectorAll('.CourseList__courseItemContainer___k7Ylq');
     const searchTerm = query.toLowerCase().trim();
-
     if (!searchTerm) {
         courses.forEach(card => card.style.setProperty('display', 'flex', 'important'));
         return;
     }
-
     let matchedCodes = [];
-    
-    // 2. Adjust the loop to handle the arrays
     for (const [fullName, codes] of Object.entries(subjectAliases)) {
         if (fullName.startsWith(searchTerm)) {
-            // Push all codes in the array to our matchedCodes list
             matchedCodes.push(...codes.map(c => c.toLowerCase()));
         }
     }
-
     courses.forEach(card => {
         const title = card.querySelector('.CourseList__courseTitle___acdCw')?.innerText.toLowerCase() || '';
-        
-        // Check if the title includes any of the matched codes OR the literal search term
         const isMatch = matchedCodes.some(code => title.includes(code)) || title.includes(searchTerm);
-
         if (isMatch) {
             card.style.setProperty('display', 'flex', 'important');
         } else {
@@ -91,32 +84,28 @@ function applyVisualFilter(query) {
 }
 
 function cleanPage() {
-    // redirect from IGCSE to IB
+    applyCompactMode(extensionSettings.compactActive);
+    applyClassPrioritization(extensionSettings.prioritizeClassesActive);
+
     if (extensionSettings.redirectActive !== false) {
         const igcseUrl = "https://web.toddleapp.com/platform/242745246163763771/courses";
         const ibUrl = "https://web.toddleapp.com/platform/242745246163763772/courses";
-
         if (window.location.href === igcseUrl || window.location.href === igcseUrl + "/") {
             window.location.replace(ibUrl);
             return; 
         }
     }
 
-    // remove WalkMe button
     if (extensionSettings.walkMeActive !== false) {
         const walkMe = document.getElementById('walkme-player');
         if (walkMe) walkMe.remove();
     }
 
-    // remove "No due date" tab
     if (extensionSettings.hideNoDueActive !== false) {
         const noDueTab = document.querySelector('[data-test-id="consolidatedDeadlinesWidget-tabs-tab-NODUE"]');
-        if (noDueTab) {
-            noDueTab.style.setProperty('display', 'none', 'important');
-        }
+        if (noDueTab) noDueTab.style.setProperty('display', 'none', 'important');
     }
 
-    // auto open to new tab
     if (extensionSettings.autoOpenActive !== false && !isProcessing) {
         const iframe = document.querySelector('iframe[src*="google.com"], iframe[src*="toddleapp.com/viewer"]');
         if (iframe && iframe.src) {
@@ -128,21 +117,55 @@ function cleanPage() {
         }
     }
 
-    // replace search with our own recreation
     if (extensionSettings.aliasActive !== false) {
         const searchBar = document.querySelector('.CourseList__searchIputBox___XJGG9');
-        
         if (searchBar && !searchBar.dataset.hijacked) {
             searchBar.dataset.hijacked = "true";
             const ghostBar = searchBar.cloneNode(true);
             searchBar.style.display = 'none';
             searchBar.parentNode.insertBefore(ghostBar, searchBar.nextSibling);
             const innerInput = ghostBar.tagName.toLowerCase() === 'input' ? ghostBar : ghostBar.querySelector('input');
-            
             if (innerInput) {
                 innerInput.addEventListener('input', (e) => applyVisualFilter(e.target.value));
-                // innerInput.focus(); // this can steal user focus
             }
         }
+    }
+}
+
+function applyCompactMode(isActive) {
+    let styleTag = document.getElementById('toddle-compact-mode-styles');
+    if (!isActive) { if (styleTag) styleTag.remove(); return; }
+    if (!styleTag) {
+        styleTag = document.createElement('style');
+        styleTag.id = 'toddle-compact-mode-styles';
+        styleTag.innerHTML = `
+            .StudentCourses__announcementButtonContainer___GbzI4 { gap: 10px !important; }
+            .ButtonCard__containerV2____83qk { height: 50px !important; min-height: 50px !important; }
+            .ButtonCard__rightContainerV2___LW1YB { padding: 0px 12px !important; display: flex !important; align-items: center !important; }
+            .ButtonCard__iconContainer___Cz3Fx { width: 32px !important; min-width: 32px !important; display: flex !important; justify-content: center !important; align-items: center !important; }
+            .ButtonCard__iconContainer___Cz3Fx svg { width: 24px !important; height: 24px !important; }
+            .ButtonCard__subLabel___237QL { display: none !important; }
+            .MyClassList__courseCardsCon___hgzZp { grid-template-columns: repeat(3, 1fr) !important; margin-top: 16px !important; }
+            .CourseList__courseItemContainer___k7Ylq { margin-bottom: 8px !important; }
+            .GroupedProjectGroupList__groupedContainer___F_cps { grid-gap: 12px; !important; }
+        `;
+        document.head.appendChild(styleTag);
+    }
+}
+
+function applyClassPrioritization(isActive) {
+    let styleTag = document.getElementById('toddle-priority-styles');
+    if (!isActive) { if (styleTag) styleTag.remove(); return; }
+    if (!styleTag) {
+        styleTag = document.createElement('style');
+        styleTag.id = 'toddle-priority-styles';
+        styleTag.innerHTML = `
+            .StudentCourses__leftInnerContainer___lETNg { display: flex !important; flex-direction: column !important; padding: 0px !important; }
+            .StudentCourses__classesContainer___KylQ0 { order: 1 !important; margin-bottom: 24px !important; }
+            .StudentCourses__announcementButtonContainer___GbzI4 { order: 2 !important; }
+            .MyClassList__container___AwDcQ { padding-top: 0px !important; }
+            .GroupedProjectGroupList__container___AhHuD {order: 3 !important; }
+        `;
+        document.head.appendChild(styleTag);
     }
 }
