@@ -46,19 +46,14 @@ chrome.storage.sync.get([
     'prioritizeClassesActive'
 ], (settings) => {
     extensionSettings = settings;
+
+    // observe only after webpage loads
     const observer = new MutationObserver(cleanPage);
     observer.observe(document.documentElement, { childList: true, subtree: true });
     cleanPage();
 });
 
-chrome.storage.onChanged.addListener((changes, namespace) => {
-    if (namespace === 'sync') {
-        for (let [key, { newValue }] of Object.entries(changes)) {
-            extensionSettings[key] = newValue;
-        }
-    }
-});
-
+// visual filter for search mod
 function applyVisualFilter(query) {
     const courses = document.querySelectorAll('.CourseList__courseItemContainer___k7Ylq');
     const searchTerm = query.toLowerCase().trim();
@@ -83,10 +78,11 @@ function applyVisualFilter(query) {
     });
 }
 
-function cleanPage() {
-    applyCompactMode(extensionSettings.compactActive);
-    applyClassPrioritization(extensionSettings.prioritizeClassesActive);
+    function cleanPage() {
+        applyCompactMode(extensionSettings.compactActive);
+        applyClassPrioritization(extensionSettings.prioritizeClassesActive);
 
+    //redirect user from igcse to ib
     if (extensionSettings.redirectActive !== false) {
         const igcseUrl = "https://web.toddleapp.com/platform/242745246163763771/courses";
         const ibUrl = "https://web.toddleapp.com/platform/242745246163763772/courses";
@@ -96,27 +92,46 @@ function cleanPage() {
         }
     }
 
+    // remove esf walk me button
     if (extensionSettings.walkMeActive !== false) {
         const walkMe = document.getElementById('walkme-player');
         if (walkMe) walkMe.remove();
     }
 
+    // remove no due date assignments tab
     if (extensionSettings.hideNoDueActive !== false) {
         const noDueTab = document.querySelector('[data-test-id="consolidatedDeadlinesWidget-tabs-tab-NODUE"]');
         if (noDueTab) noDueTab.style.setProperty('display', 'none', 'important');
     }
 
+    // open documents in new tabs
     if (extensionSettings.autoOpenActive !== false && !isProcessing) {
-        const iframe = document.querySelector('iframe[src*="google.com"], iframe[src*="toddleapp.com/viewer"]');
-        if (iframe && iframe.src) {
+        const openInNewTabBtn = document.querySelector('[data-test-id="classFlow-theatreMode-openInNewTab-button"]');
+        const iframe = document.querySelector('iframe[src*="toddleapp.com/viewer"], iframe[src*="google.com"]');
+
+        if (openInNewTabBtn || (iframe && iframe.src && iframe.src !== 'about:blank')) {
             isProcessing = true;
-            window.open(iframe.src, '_blank');
+
+            if (openInNewTabBtn) {
+                // cick open in the new tab link button
+                openInNewTabBtn.click();
+            } else if (iframe) {
+                // open iframe.src in new tab
+                window.open(iframe.src, '_blank');
+            }
+
             const closeBtn = document.querySelector('[data-test-id*="theatremode-close-button"]');
-            if (closeBtn) closeBtn.click();
-            setTimeout(() => { isProcessing = false; }, 1000);
+            if (closeBtn) {
+                closeBtn.click();
+            }
+
+            setTimeout(() => { 
+                isProcessing = false; 
+            }, 500);
         }
     }
 
+    // apply search mod
     if (extensionSettings.aliasActive !== false) {
         const searchBar = document.querySelector('.CourseList__searchIputBox___XJGG9');
         if (searchBar && !searchBar.dataset.hijacked) {
@@ -148,11 +163,13 @@ function applyCompactMode(isActive) {
             .MyClassList__courseCardsCon___hgzZp { grid-template-columns: repeat(3, 1fr) !important; margin-top: 16px !important; }
             .CourseList__courseItemContainer___k7Ylq { margin-bottom: 8px !important; }
             .GroupedProjectGroupList__groupedContainer___F_cps { grid-gap: 12px; !important; }
+            .CourseList__courseItemContainer___k7Ylq {height: auto; !important; }
         `;
         document.head.appendChild(styleTag);
     }
 }
 
+// move classes up to the top in the homepage
 function applyClassPrioritization(isActive) {
     let styleTag = document.getElementById('toddle-priority-styles');
     if (!isActive) { if (styleTag) styleTag.remove(); return; }
