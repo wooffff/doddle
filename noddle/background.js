@@ -27,7 +27,7 @@ async function checkUpdate() {
 // check when installed or updated
 chrome.runtime.onInstalled.addListener(() => {
   checkUpdate();
-  chrome.alarms.create('versionCheck', { periodInMinutes: 30 }); // Check every hour
+  chrome.alarms.create('versionCheck', { periodInMinutes: 30 }); 
 });
 
 // check when the alarm triggers

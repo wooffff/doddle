@@ -1,4 +1,3 @@
-// 1. Selectors
 const hideWalkMe = document.getElementById('toggleWalkMe');
 const hideNoDueCheck = document.getElementById('toggleHideNoDue');
 const hideNotifPopup = document.getElementById('toggleUnreadNotifications');
@@ -75,3 +74,40 @@ folderBtnCheck.addEventListener('change', () => chrome.storage.sync.set({ folder
 fixClassTitleCheck.addEventListener('change', () => chrome.storage.sync.set({ fixClassTitleActive: fixClassTitleCheck.checked }));
 tooltipFixCheck.addEventListener('change', () => chrome.storage.sync.set({ fixTooltipHoverActive: tooltipFixCheck.checked }));
 searchNavCheck.addEventListener('change', () => chrome.storage.sync.set({ searchKeyboardNavActive: searchNavCheck.checked }));
+
+// checks for updates
+const REPO_URL = "https://raw.githubusercontent.com/wooffff/noddle/master/noddle/manifest.json";
+
+async function checkVersion() {
+  try {
+    const response = await fetch(REPO_URL);
+    if (!response.ok) return; // exit if 404
+    const data = await response.json();
+    const remoteVersion = data.version;
+    const localVersion = chrome.runtime.getManifest().version;
+
+    if (remoteVersion.localeCompare(localVersion, undefined, { numeric: true }) > 0) {
+      updateNotice.style.display = 'block';
+      remoteVersionSpan.textContent = remoteVersion;
+    }
+  } catch (e) {
+    console.log("Update check failed.");
+  }
+}
+
+checkVersion();
+
+const selectAllBtn = document.getElementById('selectAllBtn');
+const deselectAllBtn = document.getElementById('deselectAllBtn');
+
+function setAllCheckboxes(state) {
+    const checkboxes = document.querySelectorAll('input[type="checkbox"]');
+
+    checkboxes.forEach(checkbox => {
+        checkbox.checked = state;
+        checkbox.dispatchEvent(new Event('change'));
+    });
+}
+
+if (selectAllBtn) selectAllBtn.addEventListener('click', () => setAllCheckboxes(true));
+if (deselectAllBtn) deselectAllBtn.addEventListener('click', () => setAllCheckboxes(false));
