@@ -3,7 +3,7 @@
 <head>
   <style>
     body {
-      width: 300px;
+      width: 350px;
       padding: 6px;
       font-family: sans-serif;
       font-size: 13px;
@@ -86,8 +86,8 @@
   </div>
   
   <div class="option-row" title="Some titles for classes use subtitle styling, revert them back to using the title styling.">
-    <input type="checkbox" id="toggleScrollBtn" checked>
-    <label for="toggleScrollBtn">Fix class titles to not use subtitle styling</label>
+    <input type="checkbox" id="toggleFixClassTitle" checked>
+    <label for="toggleFixClassTitle">Fix class titles to not use subtitle styling</label>
   </div>
 
   <div class="option-row" title="Some titles for classes use subtitle styling, revert them back to using the title styling.">
@@ -95,7 +95,10 @@
     <label for="toggleTooltipFix">Fix popup when hovering over class from exiting sidebar</label>
   </div>
 
-  <p>Please reload your page after making changes. Use this extension at your own risk.</p>
+  <div class="option-row" title="Enables keyboard navigation, press ENTER to automatically select the first search result, use arrow keys to move through search results.">
+    <input type="checkbox" id="toggleSearchNav" checked>
+    <label for="toggleSearchNav">Enable keyboard navigation in sidebar class search</label>
+  </div>
 
   <div id="updateNotice" style="display: none; padding-bottom: 8px; margin-bottom: 8px;">
     <a href="https://github.com/wooffff/noddle" target="_blank">v<span id="remoteVersion"></span></a><span> now available. Click to download.</span>

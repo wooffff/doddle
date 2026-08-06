@@ -15,7 +15,8 @@ chrome.storage.sync.get([
     'scrollBtnActive',
     'folderBtnActive',
     'fixClassTitleActive',
-    'fixTooltipHoverActive'
+    'fixTooltipHoverActive',
+    'searchKeyboardNavActive'
 ], (settings) => {
     extensionSettings = settings;
 
@@ -40,6 +41,7 @@ function cleanPage() {
     injectFolderButton(extensionSettings.folderBtnActive);
     fixClassTitle(extensionSettings.fixClassTitleActive);
     fixTooltipHover(extensionSettings.fixTooltipHoverActive);
+    searchKeyboardNav(extensionSettings.searchKeyboardNavActive)
 }
 
 function redirectIgcseToIb(isActive) {
@@ -430,4 +432,84 @@ function fixTooltipHover(isActive) {
         `;
         document.body.appendChild(styleTag);
     }
+}
+
+let searchNavInitialized = false;
+let currentSearchFocus = -1;
+
+function searchKeyboardNav(isActive) {
+    if (isActive === false) return;
+    
+    // Prevent attaching multiple listeners if React re-renders the page
+    if (searchNavInitialized) return; 
+    searchNavInitialized = true;
+
+    const style = document.createElement('style');
+    style.id = 'toddle-search-nav-styles';
+    style.innerHTML = `
+        .toddle-search-active {
+            background-color: rgba(0, 0, 0, 0.08) !important;
+            border-radius: 8px; 
+            outline: 2px solid #b0b0b0; /* Adds a visual focus ring */
+        }
+    `;
+    document.body.appendChild(style);
+
+    document.addEventListener('keydown', function(e) {
+        const searchInput = document.querySelector('.CourseList__searchIputBox___XJGG9');
+        const items = document.querySelectorAll('.CourseList__courseItemContainer___k7Ylq');
+        
+        // Only run if the search box actually exists on the screen
+        if (!searchInput || !items.length) return;
+        
+        const isSearchFocused = document.activeElement === searchInput;
+        const isNavigating = currentSearchFocus > -1;
+
+        // Only hijack the keys if we are actively using the search bar
+        if (!isSearchFocused && !isNavigating) return;
+
+        if (e.key === 'ArrowDown') {
+            e.preventDefault(); // Stop the whole page from scrolling
+            currentSearchFocus++;
+            updateActiveSearchItem(items);
+        } else if (e.key === 'ArrowUp') {
+            e.preventDefault(); // Stop the whole page from scrolling
+            currentSearchFocus--;
+            updateActiveSearchItem(items);
+        } else if (e.key === 'Enter') {
+            e.preventDefault();
+            if (currentSearchFocus > -1 && items[currentSearchFocus]) {
+                items[currentSearchFocus].click(); // Click the highlighted item
+            } else if (items[0]) {
+                items[0].click(); // Default to clicking the first item if none are highlighted
+            }
+        }
+    });
+
+    // 3. Reset the selection highlight whenever you type a new letter
+    document.addEventListener('input', function(e) {
+        if (e.target && e.target.classList.contains('CourseList__searchIputBox___XJGG9')) {
+            currentSearchFocus = -1; // Reset focus to top
+            const items = document.querySelectorAll('.CourseList__courseItemContainer___k7Ylq');
+            removeActiveSearchItems(items);
+        }
+    });
+}
+
+function updateActiveSearchItem(items) {
+    removeActiveSearchItems(items);
+    
+    // Wrap around logic (e.g., hitting Up on the first item takes you to the bottom)
+    if (currentSearchFocus >= items.length) currentSearchFocus = 0; 
+    if (currentSearchFocus < 0) currentSearchFocus = (items.length - 1); 
+
+    // Add highlight class
+    items[currentSearchFocus].classList.add('toddle-search-active');
+    
+    // Automatically scroll the sidebar so the highlighted item stays in view
+    items[currentSearchFocus].scrollIntoView({ block: 'nearest', behavior: 'smooth' });
+}
+
+function removeActiveSearchItems(items) {
+    items.forEach(item => item.classList.remove('toddle-search-active'));
 }

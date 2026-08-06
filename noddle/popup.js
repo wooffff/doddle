@@ -13,6 +13,7 @@ const scrollBtnCheck = document.getElementById('toggleScrollBtn');
 const folderBtnCheck = document.getElementById('toggleFolderBtn');
 const fixClassTitleCheck = document.getElementById('toggleFixClassTitle');
 const tooltipFixCheck = document.getElementById('toggleTooltipFix');
+const searchNavCheck = document.getElementById('toggleSearchNav');
 
 const updateNotice = document.getElementById('updateNotice');
 const remoteVersionSpan = document.getElementById('remoteVersion');
@@ -31,7 +32,8 @@ const defaultSettings = {
     scrollBtnActive: true,
     folderBtnActive: true,
     fixClassTitleActive: true,
-    fixTooltipHover: true
+    fixTooltipHoverActive: true,
+    searchKeyboardNavActive: true
 };
 
 // by passing defaultSettings into .get(), Chrome will automatically use 
@@ -51,6 +53,7 @@ chrome.storage.sync.get(defaultSettings, (res) => {
     folderBtnCheck.checked = res.folderBtnActive;
     fixClassTitleCheck.checked = res.fixClassTitleActive;
     tooltipFixCheck.checked = res.fixTooltipHoverActive;
+    searchNavCheck.checked = res.searchKeyboardNavActive;
 
     // save default settings immediately upon load.
     chrome.storage.sync.set(res);
@@ -71,3 +74,4 @@ priorityCheck.addEventListener('change', () => chrome.storage.sync.set({ priorit
 folderBtnCheck.addEventListener('change', () => chrome.storage.sync.set({ folderBtnActive: folderBtnCheck.checked }));
 fixClassTitleCheck.addEventListener('change', () => chrome.storage.sync.set({ fixClassTitleActive: fixClassTitleCheck.checked }));
 tooltipFixCheck.addEventListener('change', () => chrome.storage.sync.set({ fixTooltipHoverActive: tooltipFixCheck.checked }));
+searchNavCheck.addEventListener('change', () => chrome.storage.sync.set({ searchKeyboardNavActive: searchNavCheck.checked }));
