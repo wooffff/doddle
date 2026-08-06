@@ -3,14 +3,16 @@ const hideWalkMe = document.getElementById('toggleWalkMe');
 const hideNoDueCheck = document.getElementById('toggleHideNoDue');
 const hideNotifPopup = document.getElementById('toggleUnreadNotifications');
 const submitNotifCheck = document.getElementById('toggleSubmitNotif');
+const yearPrefixCheck = document.getElementById('toggleYearPrefix');
 const autoOpenCheck = document.getElementById('toggleAutoOpen');
-const aliasCheck = document.getElementById('toggleAliases');
 const backBtnCheck = document.getElementById('toggleBackButton');
 const redirectCheck = document.getElementById('toggleRedirect');
 const compactCheck = document.getElementById('toggleCompact');
 const priorityCheck = document.getElementById('togglePriority');
 const scrollBtnCheck = document.getElementById('toggleScrollBtn');
 const folderBtnCheck = document.getElementById('toggleFolderBtn');
+const fixClassTitleCheck = document.getElementById('toggleFixClassTitle');
+const tooltipFixCheck = document.getElementById('toggleTooltipFix');
 
 const updateNotice = document.getElementById('updateNotice');
 const remoteVersionSpan = document.getElementById('remoteVersion');
@@ -20,14 +22,16 @@ const defaultSettings = {
     hideNoDueActive: true,
     hideNotifPopupActive: true,
     hideSubmitNotif: true,
+    hideYearPrefixActive: true,
     autoOpenActive: true,
-    aliasActive: true,
     backBtnActive: true,
     redirectActive: true,
     compactActive: true,
     prioritizeClassesActive: true,
     scrollBtnActive: true,
-    folderBtnActive: true
+    folderBtnActive: true,
+    fixClassTitleActive: true,
+    fixTooltipHover: true
 };
 
 // by passing defaultSettings into .get(), Chrome will automatically use 
@@ -37,14 +41,16 @@ chrome.storage.sync.get(defaultSettings, (res) => {
     hideNoDueCheck.checked = res.hideNoDueActive;
     hideNotifPopup.checked = res.hideNotifPopupActive;
     submitNotifCheck.checked = res.hideSubmitNotif;
+    yearPrefixCheck.checked = res.hideYearPrefixActive;
     autoOpenCheck.checked = res.autoOpenActive;
-    aliasCheck.checked = res.aliasActive;
     backBtnCheck.checked = res.backBtnActive;
     redirectCheck.checked = res.redirectActive;
     scrollBtnCheck.checked = res.scrollBtnActive;
     compactCheck.checked = res.compactActive;
     priorityCheck.checked = res.prioritizeClassesActive;
     folderBtnCheck.checked = res.folderBtnActive;
+    fixClassTitleCheck.checked = res.fixClassTitleActive;
+    tooltipFixCheck.checked = res.fixTooltipHoverActive;
 
     // save default settings immediately upon load.
     chrome.storage.sync.set(res);
@@ -55,11 +61,13 @@ hideWalkMe.addEventListener('change', () => chrome.storage.sync.set({ hideWalkMe
 hideNoDueCheck.addEventListener('change', () => chrome.storage.sync.set({ hideNoDueActive: hideNoDueCheck.checked }));
 hideNotifPopup.addEventListener('change', () => chrome.storage.sync.set({ hideNotifPopupActive: hideNotifPopup.checked }));
 submitNotifCheck.addEventListener('change', () => chrome.storage.sync.set({ hideSubmitNotif: submitNotifCheck.checked }));
+yearPrefixCheck.addEventListener('change', () => chrome.storage.sync.set({ hideYearPrefixActive: yearPrefixCheck.checked }));
 autoOpenCheck.addEventListener('change', () => chrome.storage.sync.set({ autoOpenActive: autoOpenCheck.checked }));
-aliasCheck.addEventListener('change', () => chrome.storage.sync.set({ aliasActive: aliasCheck.checked }));
 backBtnCheck.addEventListener('change', () => chrome.storage.sync.set({ backBtnActive: backBtnCheck.checked }));
 redirectCheck.addEventListener('change', () => chrome.storage.sync.set({ redirectActive: redirectCheck.checked }));
 scrollBtnCheck.addEventListener('change', () => chrome.storage.sync.set({ scrollBtnActive: scrollBtnCheck.checked }));
 compactCheck.addEventListener('change', () => chrome.storage.sync.set({ compactActive: compactCheck.checked }));
 priorityCheck.addEventListener('change', () => chrome.storage.sync.set({ prioritizeClassesActive: priorityCheck.checked }));
 folderBtnCheck.addEventListener('change', () => chrome.storage.sync.set({ folderBtnActive: folderBtnCheck.checked }));
+fixClassTitleCheck.addEventListener('change', () => chrome.storage.sync.set({ fixClassTitleActive: fixClassTitleCheck.checked }));
+tooltipFixCheck.addEventListener('change', () => chrome.storage.sync.set({ fixTooltipHoverActive: tooltipFixCheck.checked }));

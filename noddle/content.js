@@ -1,38 +1,3 @@
-const subjectAliases = {
-    'chemistry': ['CH'],
-    'math': ['MA', 'MI'],
-    'computer science': ['CP'],
-    'psychology': ['PS'],
-    'philosophy': ['PP'],
-    'english': ['EU'],
-    'tok': ['TK'],
-    'chinese': ['CY'],
-    'french': ['FR'],
-    'japanese': ['JA'],
-    'spanish': ['SA'],
-    'history': ['HI'],
-    'biology': ['BI'],
-    'physics': ['PH'],
-    'economics': ['EC'],
-    'dt': ['TE'],
-    'business': ['BS'],
-    'global politics': ['GP'],
-    // ess
-    // sports science
-    // geography
-    // visual art
-    // theatre
-    // music
-
-    // Houses
-    'nansen': ['N'],
-    'wilberforce': ['W'],
-    'rutherford': ['R'],
-    'einstein': ['E'],
-    'da vinci': ['D'],
-    'fleming': ['F'],
-};
-
 let extensionSettings = {};
 let isProcessing = false;
 
@@ -41,15 +6,16 @@ chrome.storage.sync.get([
     'hideNoDueActive', 
     'hideNotifPopupActive',
     'hideSubmitNotif',
+    'hideYearPrefixActive',
     'autoOpenActive', 
-    'aliasActive', 
     'backBtnActive',
     'redirectActive', 
     'compactActive', 
     'prioritizeClassesActive',
-    'preloadActive',
     'scrollBtnActive',
-    'folderBtnActive'
+    'folderBtnActive',
+    'fixClassTitleActive',
+    'fixTooltipHoverActive'
 ], (settings) => {
     extensionSettings = settings;
 
@@ -59,71 +25,59 @@ chrome.storage.sync.get([
     cleanPage();
 });
 
-// visual filter for search mod
-function applyVisualFilter(query) {
-    const courses = document.querySelectorAll('.CourseList__courseItemContainer___k7Ylq');
-    const searchTerm = query.toLowerCase().trim();
-    if (!searchTerm) {
-        courses.forEach(card => card.style.setProperty('display', 'flex', 'important'));
-        return;
-    }
-    let matchedCodes = [];
-    for (const [fullName, codes] of Object.entries(subjectAliases)) {
-        if (fullName.startsWith(searchTerm)) {
-            matchedCodes.push(...codes.map(c => c.toLowerCase()));
-        }
-    }
-    courses.forEach(card => {
-        const title = card.querySelector('.CourseList__courseTitle___acdCw')?.innerText.toLowerCase() || '';
-        const isMatch = matchedCodes.some(code => title.includes(code)) || title.includes(searchTerm);
-        if (isMatch) {
-            card.style.setProperty('display', 'flex', 'important');
-        } else {
-            card.style.setProperty('display', 'none', 'important');
-        }
-    });
-}
-
 function cleanPage() {
+    removeWalkMe(extensionSettings.hideWalkMeActive);
+    removeNoDueTab(extensionSettings.hideNoDueActive);
+    removeNotifPopup(extensionSettings.hideNotifPopupActive);
+    hideSubmitNotification(extensionSettings.hideSubmitNotif);
+    removeYearPrefix(extensionSettings.hideYearPrefixActive);
+    autoOpenDocuments(extensionSettings.autoOpenActive);
+    fixBackButton(extensionSettings.backBtnActive); 
+    redirectIgcseToIb(extensionSettings.redirectActive);
     applyCompactMode(extensionSettings.compactActive);
     applyClassPrioritization(extensionSettings.prioritizeClassesActive);
     injectScrollButton(extensionSettings.scrollBtnActive);
     injectFolderButton(extensionSettings.folderBtnActive);
-    fixBackButton(extensionSettings.autoOpenActive);
-    hideSubmitNotification(extensionSettings.hideSubmitNotif)
+    fixClassTitle(extensionSettings.fixClassTitleActive);
+    fixTooltipHover(extensionSettings.fixTooltipHoverActive);
+}
 
-    //redirect user from igcse to ib
-    if (extensionSettings.redirectActive !== false) {
+function redirectIgcseToIb(isActive) {
+    if (isActive !== false) {
         const igcseUrl = "https://web.toddleapp.com/platform/242745246163763771/courses";
         const ibUrl = "https://web.toddleapp.com/platform/242745246163763772/courses";
         if (window.location.href === igcseUrl || window.location.href === igcseUrl + "/") {
             window.location.replace(ibUrl);
-            return; 
         }
     }
+}
 
-    // remove esf walk me button
-    if (extensionSettings.hideWalkMeActive !== false) {
+function removeWalkMe(isActive) {
+    if (isActive !== false) {
         const walkMe = document.getElementById('walkme-player');
         if (walkMe) walkMe.remove();
     }
+}
 
-    // remove no due date assignments tab
-    if (extensionSettings.hideNoDueActive !== false) {
+function removeNoDueTab(isActive) {
+    if (isActive !== false) {
         const noDueTab = document.querySelector('[data-test-id="consolidatedDeadlinesWidget-tabs-tab-NODUE"]');
         if (noDueTab) noDueTab.remove();
     }
+}
 
-    // remove notif popup
-    if (extensionSettings.hideNotifPopupActive !== false) {
+function removeNotifPopup(isActive) {
+    if (isActive !== false) {
         const notifPopup = document.querySelector('[id^="walkme-visual-design"]');
         if (notifPopup) notifPopup.remove(); 
     }
+}
 
-    // open documents in new tabs
-    if (extensionSettings.autoOpenActive !== false && !isProcessing) {
+function autoOpenDocuments(isActive) {
+    if (isActive !== false && !isProcessing) {
         const openInNewTabBtn = document.querySelector('[data-test-id="classFlow-theatreMode-openInNewTab-button"]');
         const iframe = document.querySelector('iframe[src*="toddleapp.com/viewer"], iframe[src*="google.com"]:not([src*="docs.google.com/picker"])');
+        
         if (openInNewTabBtn || (iframe && iframe.src && iframe.src !== 'about:blank')) {
             isProcessing = true;
 
@@ -152,21 +106,6 @@ function cleanPage() {
                     isProcessing = false; 
                 }, 1000);
             }, 500);
-        }
-    }
-
-    // apply search mod
-    if (extensionSettings.aliasActive !== false) {
-        const searchBar = document.querySelector('.CourseList__searchIputBox___XJGG9');
-        if (searchBar && !searchBar.dataset.hijacked) {
-            searchBar.dataset.hijacked = "true";
-            const ghostBar = searchBar.cloneNode(true);
-            searchBar.style.display = 'none';
-            searchBar.parentNode.insertBefore(ghostBar, searchBar.nextSibling);
-            const innerInput = ghostBar.tagName.toLowerCase() === 'input' ? ghostBar : ghostBar.querySelector('input');
-            if (innerInput) {
-                innerInput.addEventListener('input', (e) => applyVisualFilter(e.target.value));
-            }
         }
     }
 }
@@ -272,13 +211,12 @@ function applyCompactMode(isActive) {
             .StudentCourses__announcementButtonContainer___GbzI4 { gap: 10px !important; }
             .ButtonCard__containerV2____83qk { height: 50px !important; min-height: 50px !important; }
             .ButtonCard__rightContainerV2___LW1YB { padding: 0px 12px !important; display: flex !important; align-items: center !important; }
-            .ButtonCard__iconContainer___Cz3Fx { width: 32px !important; min-width: 32px !important; display: flex !important; justify-content: center !important; align-items: center !important; }
+            .ButtonCard__iconContainer___Cz4Fx { width: 32px !important; min-width: 32px !important; display: flex !important; justify-content: center !important; align-items: center !important; }
             .ButtonCard__iconContainer___Cz3Fx svg { width: 24px !important; height: 24px !important; }
             .ButtonCard__subLabel___237QL { display: none !important; }
             .MyClassList__courseCardsCon___hgzZp { grid-template-columns: repeat(3, 1fr) !important; margin-top: 16px !important; }
-            .CourseList__courseItemContainer___k7Ylq { margin-bottom: 8px !important; }
             .GroupedProjectGroupList__groupedContainer___F_cps { grid-gap: 12px; !important; }
-            .CourseList__courseItemContainer___k7Ylq {height: auto; !important; }
+            .CourseList__courseItemContainer___k7Ylq { margin-bottom: 8px !important; height: 40px !important; }
         `;
         document.head.appendChild(styleTag);
     }
@@ -415,5 +353,81 @@ function hideSubmitNotification(isActive) {
             leaveBtn.dataset.autoClicked = "true";
             leaveBtn.click();
         }
+    }
+}
+
+function removeYearPrefix(isActive) {
+    if (isActive === false) return;
+
+    const selectors = [
+        '.ClassCardV2__labelV2___B2ZiG',
+        '.SideBar__courseSwitcherNameText___GlxPD',
+        '.CourseList__courseTitle___acdCw'
+    ].join(', ');
+
+    const classTitles = document.querySelectorAll(selectors);
+    
+    for (let i = 0; i < classTitles.length; i++) {
+        const el = classTitles[i];
+        
+        if (el.textContent && el.textContent.includes('Year 13 - ')) {
+            el.childNodes.forEach(node => {
+                if (node.nodeType === Node.TEXT_NODE && node.nodeValue.includes('Year 13 - ')) {
+                    node.nodeValue = node.nodeValue.replace('Year 13 - ', '');
+                }
+            });
+        }
+    }
+}
+
+function fixClassTitle(isActive) {
+    if (isActive === false) return;
+
+    // Regex matches numbers 7-13, immediately followed by N, E, D, F, W, or R (case-insensitive)
+    const regexPattern = /^(7|8|9|10|11|12|13)[NEDFWR]$/i;
+
+    const targets = [
+        {
+            selector: '.CourseList__courseInfoSubText___trizA',
+            newClass: 'CourseList__courseTitle___acdCw CourseList__courseTitleWithoutPin___HTgbF'
+        },
+        {
+            selector: '.SideBar__courseInfoSubText___WHk05',
+            newClass: 'SideBar__courseSwitcherNameText___GlxPD'
+        }
+    ];
+
+    targets.forEach(({ selector, newClass }) => {
+        const elements = document.querySelectorAll(selector);
+
+        elements.forEach(el => {
+            const text = el.textContent ? el.textContent.trim() : '';
+
+            // Check if it's "Higher Education" OR matches the homeroom/class regex pattern
+            if (text.includes('Higher Education') || regexPattern.test(text)) {
+                el.className = newClass;
+
+                if (regexPattern.test(text)) {
+                    el.textContent = text.toUpperCase();
+                }
+            }
+        });
+    });
+}
+
+function fixTooltipHover(isActive) {
+    if (isActive === false) return; 
+    let styleTag = document.getElementById('toddle-tooltip-fix-styles');
+    
+    if (!styleTag) {
+        styleTag = document.createElement('style');
+        styleTag.id = 'toddle-tooltip-fix-styles';
+        styleTag.innerHTML = `
+            .rc-tooltip, 
+            .rc-tooltip * { 
+                pointer-events: none !important; 
+            }
+        `;
+        document.body.appendChild(styleTag);
     }
 }
