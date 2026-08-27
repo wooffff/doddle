@@ -114,6 +114,7 @@ function autoOpenDocuments(isActive) {
 
 function injectScrollButton(isActive) {
     const existingBtn = document.getElementById('custom-scroll-to-bottom-btn');
+    
     if (!isActive) {
         if (existingBtn) {
             existingBtn.parentElement.remove(); 
@@ -122,10 +123,13 @@ function injectScrollButton(isActive) {
     }
     if (existingBtn) return;
 
-    const statusBtn = document.querySelector('[data-test-id="classFlow-filterHeader-studentStatus-button"]');
-    if (!statusBtn) return; 
+    // Target the new search input using its data-test-id
+    const searchInput = document.querySelector('[data-test-id="learningCourse-filterHeader-search-input"]');
+    if (!searchInput) return; 
     
-    const statusWrapper = statusBtn.parentElement.parentElement;
+    // Find the outer container using .closest()
+    const targetWrapper = searchInput.closest('.FilterHeader__searchInputContainer___Tw9TD') || searchInput.parentElement.parentElement;
+    
     const btnDiv = document.createElement('div');
     const scrollBtn = document.createElement('button');
     
@@ -154,53 +158,43 @@ function injectScrollButton(isActive) {
     scrollBtn.onmouseout = () => scrollBtn.style.background = '#fff';
 
     scrollBtn.onclick = () => {
-        const scrollBox = document.getElementById('classMaterials-innerContainer');
-        if (!scrollBox) {
-            alert("Couldn't find the scroll box! The ID might be wrong.");
+        const virtuosoScroller = document.querySelector('[data-virtuoso-scroller="true"]');
+        
+        if (!virtuosoScroller) {
+            console.error("Scroll box hunt failed. Page structure is likely inside an iframe or not loaded yet.");
             return;
         }
 
-        const duration = 800; 
-        const start = scrollBox.scrollTop;
-        const end = scrollBox.scrollHeight - scrollBox.clientHeight;
-        const change = end - start;
-        const startTime = performance.now();
+        let scrollTarget = virtuosoScroller;
+        let isWindowScroll = true;
 
-        let animationFrameId;
-        let isUserScrolling = false;
-
-        const stopAnimation = () => {
-            isUserScrolling = true;
-            cancelAnimationFrame(animationFrameId);
-            scrollBox.removeEventListener('wheel', stopAnimation);
-            scrollBox.removeEventListener('touchstart', stopAnimation);
-        };
-
-        scrollBox.addEventListener('wheel', stopAnimation, { passive: true });
-        scrollBox.addEventListener('touchstart', stopAnimation, { passive: true });
-
-        function animateScroll(currentTime) {
-            if (isUserScrolling) return; 
-
-            const elapsed = currentTime - startTime;
-            const progress = Math.min(elapsed / duration, 1);
-            const easeProgress = 1 - Math.pow(1 - progress, 3); 
+        while (scrollTarget && scrollTarget !== document.body) {
+            const style = window.getComputedStyle(scrollTarget);
+            const overflowY = style.getPropertyValue('overflow-y');
             
-            scrollBox.scrollTop = start + (change * easeProgress);
-
-            if (elapsed < duration) {
-                animationFrameId = requestAnimationFrame(animateScroll);
-            } else {
-                scrollBox.removeEventListener('wheel', stopAnimation);
-                scrollBox.removeEventListener('touchstart', stopAnimation);
+            if (overflowY === 'auto' || overflowY === 'scroll') {
+                isWindowScroll = false;
+                break;
             }
+            scrollTarget = scrollTarget.parentElement;
         }
-        
-        animationFrameId = requestAnimationFrame(animateScroll);
+
+        if (isWindowScroll) {
+            window.scrollTo({
+                top: document.documentElement.scrollHeight,
+                behavior: 'smooth'
+            });
+        } else {
+            scrollTarget.scrollTo({
+                top: scrollTarget.scrollHeight, 
+                behavior: 'smooth'
+            });
+        }
     };
 
     btnDiv.appendChild(scrollBtn);
-    statusWrapper.parentNode.insertBefore(btnDiv, statusWrapper);
+    
+    targetWrapper.parentNode.insertBefore(btnDiv, targetWrapper);
 }
 
 function applyCompactMode(isActive) {
